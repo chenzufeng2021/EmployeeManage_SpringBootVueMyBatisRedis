@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+	<head>
+		<title>Update Employee</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<link rel="stylesheet" type="text/css"
+			href="css/style.css" />
+	</head>
+
+	<body>
+		<div id="wrap">
+			<div id="top_content">
+					<div id="header">
+						<div id="rightheader">
+							<p>
+								2021/07/04
+								<br />
+							</p>
+						</div>
+						<div id="topheader">
+							<h1 id="title">
+								<a href="emplist.html">main</a>
+							</h1>
+						</div>
+						<div id="navigation">
+						</div>
+					</div>
+				<div id="content">
+					<p id="whereami">
+					</p>
+					<h1>
+						Update Employee Information:
+					</h1>
+					<form action="emplist.html" method="post">
+						<table cellpadding="0" cellspacing="0" border="0"
+							class="form_table">
+
+							<tr>
+								<td valign="middle" align="right">
+									id:
+								</td>
+								<td valign="middle" align="left">
+									{{employee.id}}
+								</td>
+							</tr>
+
+							<tr>
+								<td valign="middle" align="right">
+									Old photo:
+								</td>
+								<td valign="middle" align="left">
+									<img :src="employee.profilePicturePath" style="height: 60px;" alt="">
+								</td>
+							</tr>
+
+							<tr>
+								<td valign="middle" align="right">
+									name:
+								</td>
+								<td valign="middle" align="left">
+									<!--原<input type="text" class="inputgri" name="name" value="zhangshan"/>-->
+									<input type="text" class="inputgri" v-model="employee.name"/>
+								</td>
+							</tr>
+
+							<tr>
+								<td valign="middle" align="right">
+									New photo:
+								</td>
+								<td valign="middle" align="left">
+									<!--原<input type="file" name="photo" />-->
+									<input type="file" ref="photo" />
+								</td>
+							</tr>
+
+							<tr>
+								<td valign="middle" align="right">
+									salary:
+								</td>
+								<td valign="middle" align="left">
+									<!--原<input type="text" class="inputgri" name="salary" value="20000"/>-->
+									<input type="text" class="inputgri" v-model="employee.salary"/>
+								</td>
+							</tr>
+
+							<tr>
+								<td valign="middle" align="right">
+									age:
+								</td>
+								<td valign="middle" align="left">
+									<!--原<input type="text" class="inputgri" name="age" value="20"/>-->
+									<input type="text" class="inputgri" v-model="employee.age"/>
+								</td>
+							</tr>
+						</table>
+						<p>
+							<!--原<input type="submit" class="button" value="Confirm" />-->
+							<input type="button" @click="updateEmployee" class="button" value="Confirm" />
+						</p>
+					</form>
+				</div>
+			</div>
+			<div id="footer">
+				<div id="footer_bg">
+					ABC@126.com
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
+
+
+<script src="js/vue.js"></script>
+<script src="js/axios.min.js"></script>
+
+<script>
+	var app = new Vue ({
+		el: "#wrap",
+
+		data: {
+			user: {},
+			employee: {}
+		},
+
+		methods: {
+			// 处理安全退出
+			logout() {
+				localStorage.removeItem("user");
+				location.reload();
+			},
+
+			// 更新员工信息
+			updateEmployee(){
+				console.log(this.emp);
+				console.log(this.$refs.photo.files[0]);
+				// 文件上传时，请求方式必须是post；enctype必须为multipart/form-data
+				const formData = new FormData();
+				formData.append("id", this.employee.id)
+				formData.append("name", this.employee.name);
+				// 避免不更新头像，而再次展示全体员工信息时，没有头像
+				formData.append("profilePicturePath", this.employee.profilePicturePath);
+				formData.append("salary", this.employee.salary);
+				formData.append("age", this.employee.age);
+				formData.append("photo", this.$refs.photo.files[0]);
+				const _this = this;
+				axios ({
+					method:"post",
+					url:"http://localhost:8080/Employee_Manage/Employee/Update",
+					data:formData,
+					headers: {
+						'content-type':'multipart/form-data'
+					}
+				}).then(res=>{
+					console.log(res.data);
+					if(res.data.state) {
+						if(window.confirm(res.data.message + "点击确定跳转到员工列表页面！")) {
+							location.href="emplist.html";
+						}
+					} else {
+						alert(res.data.message);
+					}
+				});
+			}
+		},
+
+		// 生命周期函数
+		created() {
+			const userString = localStorage.getItem("user");
+			// 用户已登录
+			if (userString) {
+				this.user =  JSON.parse(userString);
+			} else {
+				alert("您尚未登录，点击确定跳转至登录页面！");
+				location.href ="login.html";
+			}
+			// 获取对应id信息
+			const start = location.href.lastIndexOf("=");
+			const id = location.href.substring(start + 1);
+			console.log(id);
+
+			// 查询对应id的员工信息，得到相关信息后，在updateEmp页面做展示（回显）
+			const _this = this;
+			axios.get("http://localhost:8080/Employee_Manage/Employee/FindEmployeeById?id=" + id).then(res=> {
+				console.log(res.data);
+				_this.employee = res.data;
+			});
+		}
+	});
+</script>
